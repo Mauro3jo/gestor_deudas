@@ -7,20 +7,17 @@ use Illuminate\Http\Request;
 
 class SueldoController extends Controller {
     /**
-     * Obtener todos los sueldos de un usuario.
+     * Obtener todos los sueldos de un usuario agrupados por mes.
      */
-    public function index(Request $request) {
-        $query = Sueldo::query();
+    public function getSueldosPorMes($usuario_id) {
+        $sueldos = Sueldo::where('usuario_id', $usuario_id)
+                         ->orderBy('mes', 'asc')
+                         ->get()
+                         ->groupBy(function ($item) {
+                             return date('Y-m', strtotime($item->mes));
+                         });
 
-        if ($request->filled('usuario_id')) {
-            $query->where('usuario_id', $request->usuario_id);
-        }
-
-        if ($request->filled('mes')) {
-            $query->whereMonth('mes', date('m', strtotime($request->mes)));
-        }
-
-        return response()->json($query->orderBy('mes', 'desc')->get());
+        return response()->json($sueldos);
     }
 
     /**

@@ -3,29 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\GastoMensual;
-use App\Models\CuotaGasto;
 use Illuminate\Http\Request;
 
 class GastoMensualController extends Controller {
     /**
-     * Obtener todos los gastos del usuario en un mes específico.
+     * Obtener los gastos de un usuario agrupados por mes y tarjeta.
      */
-    public function index(Request $request) {
-        $query = GastoMensual::query();
+    public function getGastosPorMes($usuario_id) {
+        $gastos = GastoMensual::where('usuario_id', $usuario_id)
+                              ->orderBy('fecha_gasto', 'asc')
+                              ->get()
+                              ->groupBy(function ($item) {
+                                  return date('Y-m', strtotime($item->fecha_gasto));
+                              })
+                              ->map(function ($items) {
+                                  return $items->groupBy('tarjeta_id');
+                              });
 
-        if ($request->filled('usuario_id')) {
-            $query->where('usuario_id', $request->usuario_id);
-        }
-
-        if ($request->filled('mes')) {
-            $query->whereMonth('fecha_gasto', date('m', strtotime($request->mes)));
-        }
-
-        return response()->json($query->orderBy('fecha_gasto', 'desc')->get());
+        return response()->json($gastos);
     }
 
     /**
-     * Crear un nuevo gasto con cuotas automáticas.
+     * Registrar un nuevo gasto.
      */
     public function store(Request $request) {
         $request->validate([
@@ -34,25 +33,9 @@ class GastoMensualController extends Controller {
             'descripcion' => 'required|string',
             'fecha_gasto' => 'required|date',
             'tarjeta_id' => 'nullable|exists:tarjetas_credito,id',
-            'total_cuotas' => 'nullable|integer|min:1',
         ]);
 
         $gasto = GastoMensual::create($request->all());
-
-        if ($request->total_cuotas > 1) {
-            $cuota_monto = round($request->monto / $request->total_cuotas, 2);
-            for ($i = 1; $i <= $request->total_cuotas; $i++) {
-                CuotaGasto::create([
-                    'gasto_id' => $gasto->id,
-                    'numero_cuota' => $i,
-                    'total_cuotas' => $request->total_cuotas,
-                    'monto' => $cuota_monto,
-                    'fecha_vencimiento' => date('Y-m-d', strtotime("+$i months", strtotime($request->fecha_gasto))),
-                    'pagado' => false,
-                ]);
-            }
-        }
-
         return response()->json($gasto, 201);
     }
 

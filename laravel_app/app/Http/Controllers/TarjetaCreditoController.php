@@ -9,14 +9,10 @@ class TarjetaCreditoController extends Controller {
     /**
      * Obtener todas las tarjetas de un usuario.
      */
-    public function index(Request $request) {
-        $query = TarjetaCredito::query();
-
-        if ($request->filled('usuario_id')) {
-            $query->where('usuario_id', $request->usuario_id);
-        }
-
-        return response()->json($query->orderBy('created_at', 'desc')->get());
+    public function getTarjetas($usuario_id) {
+        return response()->json(
+            TarjetaCredito::where('usuario_id', $usuario_id)->get()
+        );
     }
 
     /**

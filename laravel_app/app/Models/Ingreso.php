@@ -5,13 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Sueldo extends Model {
+class Ingreso extends Model
+{
     use HasFactory;
 
-    protected $fillable = ['usuario_id', 'monto', 'mes'];
+    protected $fillable = [
+        'usuario_id',
+        'monto',
+        'descripcion',
+        'fecha',
+    ];
 
-    public function usuario() {
+    public function usuario()
+    {
         return $this->belongsTo(Usuario::class);
     }
 }
-

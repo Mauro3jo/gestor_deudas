@@ -16,7 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // 👇 Agregamos el middleware personalizado para API/token
+        $middleware->alias([
+            'auth.token' => \App\Http\Middleware\AuthToken::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

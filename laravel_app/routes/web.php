@@ -1,52 +1,50 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\IngresoController;
+use App\Http\Controllers\EgresoController;
+use App\Http\Controllers\CierreMensualController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\TarjetaController;
+
 use Inertia\Inertia;
-use App\Http\Controllers\DatabaseController;
-use App\Http\Controllers\UsuarioController;
-use App\Http\Controllers\SueldoController;
-use App\Http\Controllers\TarjetaCreditoController;
-use App\Http\Controllers\GastoMensualController;
-use App\Http\Controllers\DeudaController;
-use App\Http\Controllers\PagoDeudaController;
-use App\Http\Controllers\CuotaGastoController;
 
-// Autenticación de Usuarios
-Route::post('/register', [UsuarioController::class, 'register']);
-Route::post('/login', [UsuarioController::class, 'login']);
+// Página inicial redirige al login
+Route::get('/', fn () => redirect('/login'));
 
-Route::middleware('auth:sanctum')->group(function () {
-    // Usuario
-    Route::post('/logout', [UsuarioController::class, 'logout']);
-    Route::get('/user', [UsuarioController::class, 'userProfile']);
+// Rutas públicas de Inertia
+Route::get('/registro', fn () => Inertia::render('Registro'));
+Route::get('/login', fn () => Inertia::render('Login'));
 
-    // Sueldos (Agrupados por mes)
-    Route::get('/sueldos/{usuario_id}', [SueldoController::class, 'getSueldosPorMes']);
-    Route::resource('/sueldos', SueldoController::class)->except(['index', 'show']);
+// Vistas protegidas (se accede si el token es válido en frontend)
+Route::get('/perfil', fn () => Inertia::render('Perfil'));
+Route::get('/home', fn () => Inertia::render('Home'));
+Route::get('/cerrar-mes', fn () => Inertia::render('CerrarMes'));
 
-    // Tarjetas de crédito
-    Route::get('/tarjetas/{usuario_id}', [TarjetaCreditoController::class, 'getTarjetas']);
-    Route::resource('/tarjetas', TarjetaCreditoController::class)->except(['index', 'show']);
+// Rutas públicas API
+Route::post('/api/registro', [AuthController::class, 'registro']);
+Route::post('/api/login', [AuthController::class, 'login']);
 
-    // Gastos (Agrupados por mes y tarjeta)
-    Route::get('/gastos/{usuario_id}', [GastoMensualController::class, 'getGastosPorMes']);
-    Route::resource('/gastos', GastoMensualController::class)->except(['index', 'show']);
+// Rutas protegidas API (requieren token)
+Route::middleware('auth.token')->group(function () {
 
-    // Deudas (Agrupadas por mes y tarjeta)
-    Route::get('/deudas/{usuario_id}', [DeudaController::class, 'getDeudasPorMes']);
-    Route::post('/deudas/{id}/pay', [DeudaController::class, 'pay']);
-    Route::resource('/deudas', DeudaController::class)->except(['index', 'show']);
+    // ✔️ API: Perfil
+    Route::post('/api/perfil', [AuthController::class, 'perfil']); // CAMBIADO A POST
 
-    // Cuotas de Gastos (Agrupadas por mes)
-    Route::get('/cuotas/{usuario_id}', [CuotaGastoController::class, 'getCuotasPorMes']);
+    // ✔️ API: Home (cargar datos)
+    Route::post('/api/home', [HomeController::class, 'mostrar']); // YA ERA POST
 
-    // Pagos de Deudas (CRUD)
-    Route::resource('/pagos-deudas', PagoDeudaController::class);
+    // ✔️ API: Tarjetas
+    Route::post('/api/tarjetas', [TarjetaController::class, 'store']);
+    Route::post('/api/tarjetas/listar', [TarjetaController::class, 'index']); // CAMBIADO A POST
+
+    // ✔️ API: Cierres Mensuales
+    Route::post('/api/cierres-mensuales', [CierreMensualController::class, 'store']);
+    Route::post('/api/cierres-mensuales/historial', [CierreMensualController::class, 'historial']);
+    Route::post('/api/cierres-mensuales/meses-activos', [CierreMensualController::class, 'mesesActivos']);
+
+    // ✔️ API: Ingresos y Egresos
+    Route::post('/api/ingresos', [IngresoController::class, 'store']);
+    Route::post('/api/egresos', [EgresoController::class, 'store']);
 });
-
-// Chequear conexión con la base de datos
-Route::get('/check-database', [DatabaseController::class, 'checkConnection']);
-
-require __DIR__.'/auth.php';

@@ -6,19 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up() {
-        Schema::create('pagos_deudas', function (Blueprint $table) {
+        Schema::create('ingresos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('deuda_id')->constrained('deudas')->onDelete('cascade');
             $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
-            $table->decimal('monto', 10, 2);
-            $table->date('fecha_pago');
-            $table->integer('numero_cuota');
-            $table->integer('total_cuotas');
+            $table->decimal('monto', 15, 2);
+            $table->string('descripcion')->nullable();
+            $table->date('fecha');
             $table->timestamps();
         });
     }
 
     public function down() {
-        Schema::dropIfExists('pagos_deudas');
+        Schema::dropIfExists('ingresos');
     }
 };

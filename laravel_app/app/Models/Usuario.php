@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notifiable;
 
-class Usuario extends Authenticatable {
-    use HasFactory;
-
-    protected $table = 'usuarios';
+class Usuario extends Authenticatable
+{
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'nombre',
@@ -21,27 +20,23 @@ class Usuario extends Authenticatable {
         'password',
     ];
 
-    public function tokens(): HasMany {
+    public function tokens()
+    {
         return $this->hasMany(Token::class);
     }
 
-    public function sueldos(): HasMany {
-        return $this->hasMany(Sueldo::class);
+    public function ingresos()
+    {
+        return $this->hasMany(Ingreso::class);
     }
 
-    public function tarjetasCredito(): HasMany {
-        return $this->hasMany(TarjetaCredito::class);
+    public function egresos()
+    {
+        return $this->hasMany(Egreso::class);
     }
 
-    public function gastos(): HasMany {
-        return $this->hasMany(GastoMensual::class);
-    }
-
-    public function deudas(): HasMany {
-        return $this->hasMany(Deuda::class);
-    }
-
-    public function pagosDeudas(): HasMany {
-        return $this->hasMany(PagoDeuda::class);
+    public function tarjetas()
+    {
+        return $this->hasMany(Tarjeta::class);
     }
 }

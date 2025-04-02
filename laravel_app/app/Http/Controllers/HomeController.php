@@ -22,10 +22,11 @@ class HomeController extends Controller
 
             // 🔎 Agrupar egresos activos por mes y año
             $egresosActivos = Egreso::where('usuario_id', $usuario->id)
-                ->where('estado', 'activo')
-                ->get()
-                ->groupBy(fn($e) => Carbon::parse($e->fecha)->format('Y-m'));
-
+            ->where('estado', 'activo')
+            ->with('tarjeta') // 👈 esto es clave
+            ->get()
+            ->groupBy(fn($e) => Carbon::parse($e->fecha)->format('Y-m'));
+        
             $datosPorMes = [];
 
             foreach ($egresosActivos as $mesKey => $egresosMes) {

@@ -5,7 +5,7 @@ import { router } from '@inertiajs/vue3'
 
 const meses = ref([])
 const diferenciaAcumulada = ref(0)
-const mostrarHistorico = ref(false)  // Controla si se muestra el historial
+const mostrarHistorico = ref(false)
 const mostrarIngreso = ref(false)
 const mostrarEgreso = ref(false)
 const mostrarTarjeta = ref(false)
@@ -57,7 +57,6 @@ const cargarDatos = async () => {
   })
   historial.value = historialRes.data
 
-  // Preseleccionar primer mes
   if (meses.value.length) {
     seleccion.value = meses.value[0]
   }
@@ -166,6 +165,9 @@ onMounted(cargarDatos)
                   <td class="px-3 py-1.5">
                     {{ eg.nombre }}
                     <span v-if="eg.tipo === 'cuotas'">({{ eg.cuota_actual }}/{{ eg.cuota_final }})</span>
+                    <span v-if="eg.tarjeta" class="text-xs text-indigo-700 ml-1">
+                      💳 <i>{{ eg.tarjeta.nombre }}</i>
+                    </span>
                   </td>
                   <td class="px-3 py-1.5 text-right">-</td>
                   <td class="px-3 py-1.5 text-right text-red-600 font-medium">${{ eg.monto_cuota }}</td>
@@ -213,21 +215,7 @@ onMounted(cargarDatos)
       </div>
     </div>
 
-    <!-- MODAL: CERRAR MES -->
-    <Modal v-if="mostrarCerrarMes" @close="mostrarCerrarMes = false" title="Cerrar mes">
-      <div v-if="meses.length">
-        <label class="text-sm text-gray-700 mb-1">Selecciona un mes:</label>
-        <select v-model="seleccion" class="input mt-1">
-          <option v-for="m in meses" :key="`${m.mes}-${m.anio}`" :value="m">{{ m.mes }}/{{ m.anio }}</option>
-        </select>
-        <button @click="cerrarMes" class="btn-blue w-full mt-3">Cerrar</button>
-      </div>
-      <p v-else class="text-gray-600">No hay meses disponibles para cerrar.</p>
-      <p v-if="mensaje" class="text-green-600 mt-2">{{ mensaje }}</p>
-      <p v-if="error" class="text-red-600 mt-2">{{ error }}</p>
-    </Modal>
-
-    <!-- MODALES: INGRESO / EGRESO / TARJETA -->
+    <!-- MODALES -->
     <Modal v-if="mostrarIngreso" @close="mostrarIngreso = false" title="Nuevo Ingreso">
       <input v-model="nuevoIngreso.descripcion" placeholder="Descripción" class="input" />
       <input v-model="nuevoIngreso.monto" type="number" placeholder="Monto" class="input" />

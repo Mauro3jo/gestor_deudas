@@ -9,13 +9,72 @@ const mostrarHistorico = ref(false)
 const mostrarIngreso = ref(false)
 const mostrarEgreso = ref(false)
 const mostrarTarjeta = ref(false)
-const mostrarCerrarMes = ref(false)
-const tarjetas = ref([])
-const historial = ref([])
 
+// 🔹 NUEVO MODAL CIERRE DE MES
+const mostrarModalCerrarMesNuevo = ref(false)
+
+// 🔹 Lógica del nuevo modal de cierre de mes
+const opciones = ref([])
 const seleccion = ref(null)
 const mensaje = ref('')
 const error = ref('')
+
+const cargarDatos = async () => {
+  const token = localStorage.getItem('token')
+  if (!token) return router.visit('/login')
+
+  const res = await axios.post('/api/home', {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+
+  meses.value = res.data.meses
+  diferenciaAcumulada.value = res.data.diferencia_acumulada
+
+  opciones.value = res.data.meses.map(m => ({
+    mes: m.mes,
+    anio: m.anio,
+    label: `${m.mes}/${m.anio}`
+  }))
+
+  if (opciones.value.length) {
+    seleccion.value = opciones.value[0]
+  }
+
+  const tarjetasRes = await axios.post('/api/tarjetas/listar', {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  tarjetas.value = tarjetasRes.data
+
+  const historialRes = await axios.post('/api/cierres-mensuales/historial', {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  historial.value = historialRes.data
+}
+
+const cerrarMes = async () => {
+  const token = localStorage.getItem('token')
+
+  if (!seleccion.value) return
+
+  try {
+    await axios.post('/api/cierres-mensuales', {
+      mes: seleccion.value.mes,
+      anio: seleccion.value.anio
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    mensaje.value = '✅ Mes cerrado correctamente.'
+    error.value = ''
+    setTimeout(() => router.visit('/home'), 1500)
+  } catch (e) {
+    error.value = '❌ Error al cerrar el mes.'
+    mensaje.value = ''
+  }
+}
+
+const tarjetas = ref([])
+const historial = ref([])
 
 const nuevoIngreso = ref({
   monto: '',
@@ -34,55 +93,6 @@ const nuevoEgreso = ref({
 })
 
 const nuevaTarjeta = ref({ nombre: '' })
-
-const cargarDatos = async () => {
-  const token = localStorage.getItem('token')
-  if (!token) return router.visit('/login')
-
-  const res = await axios.post('/api/home', {}, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-
-  meses.value = res.data.meses
-  diferenciaAcumulada.value = res.data.diferencia_acumulada
-
-  const tarjetasRes = await axios.post('/api/tarjetas/listar', {}, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-
-  tarjetas.value = tarjetasRes.data
-
-  const historialRes = await axios.post('/api/cierres-mensuales/historial', {}, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  historial.value = historialRes.data
-
-  if (meses.value.length) {
-    seleccion.value = meses.value[0]
-  }
-}
-
-const cerrarMes = async () => {
-  const token = localStorage.getItem('token')
-  if (!seleccion.value) return
-
-  try {
-    await axios.post('/api/cierres-mensuales', {
-      mes: seleccion.value.mes,
-      anio: seleccion.value.anio
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-
-    mensaje.value = '✅ Mes cerrado correctamente.'
-    error.value = ''
-    mostrarCerrarMes.value = false
-    await cargarDatos()
-  } catch (e) {
-    error.value = '❌ Error al cerrar el mes.'
-    mensaje.value = ''
-  }
-}
 
 const guardarIngreso = async () => {
   const token = localStorage.getItem('token')
@@ -124,13 +134,13 @@ onMounted(cargarDatos)
           <button @click="mostrarIngreso = true" class="btn-green">+ Ingreso</button>
           <button @click="mostrarEgreso = true" class="btn-red">+ Egreso</button>
           <button @click="mostrarTarjeta = true" class="btn-indigo">+ Tarjeta</button>
-          <button @click="mostrarCerrarMes = true" class="btn-blue">Cerrar Mes</button>
+          <!-- 🔹 NUEVO BOTÓN -->
+          <button @click="mostrarModalCerrarMesNuevo = true" class="btn-purple">Cerrar Mes</button>
           <button @click="mostrarHistorico = !mostrarHistorico" class="btn-gray">
             {{ mostrarHistorico ? 'Ocultar' : 'Ver históricos' }}
           </button>
         </div>
       </div>
-
       <!-- DIFERENCIA ACUMULADA -->
       <div class="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 p-4 rounded shadow text-sm mb-4">
         <strong>Diferencia acumulada de cierres:</strong>
@@ -215,7 +225,7 @@ onMounted(cargarDatos)
       </div>
     </div>
 
-    <!-- MODALES -->
+    <!-- MODALES EXISTENTES (Ingreso, Egreso, Tarjeta) -->
     <Modal v-if="mostrarIngreso" @close="mostrarIngreso = false" title="Nuevo Ingreso">
       <input v-model="nuevoIngreso.descripcion" placeholder="Descripción" class="input" />
       <input v-model="nuevoIngreso.monto" type="number" placeholder="Monto" class="input" />
@@ -256,6 +266,25 @@ onMounted(cargarDatos)
         <button @click="guardarTarjeta" class="btn-indigo">Guardar</button>
       </div>
     </Modal>
+
+    <!-- 🔹 NUEVO MODAL: CIERRE DE MES -->
+    <Modal v-if="mostrarModalCerrarMesNuevo" @close="mostrarModalCerrarMesNuevo = false" title="📅 Cerrar Mes">
+      <div class="p-2">
+        <div v-if="opciones.length">
+          <label class="text-sm text-gray-700">Selecciona un mes:</label>
+          <select v-model="seleccion" class="input mt-1">
+            <option v-for="op in opciones" :key="`${op.mes}-${op.anio}`" :value="op">
+              {{ op.label }}
+            </option>
+          </select>
+          <button @click="cerrarMes" class="btn-blue mt-4 w-full">Cerrar</button>
+        </div>
+        <p v-else class="text-gray-600">No hay meses disponibles para cerrar.</p>
+
+        <p v-if="mensaje" class="mt-4 text-green-600 font-semibold">{{ mensaje }}</p>
+        <p v-if="error" class="mt-4 text-red-600 font-semibold">{{ error }}</p>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -280,5 +309,8 @@ onMounted(cargarDatos)
 }
 .btn-blue {
   @apply px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm;
+}
+.btn-purple {
+  @apply px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm;
 }
 </style>
